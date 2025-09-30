@@ -10,11 +10,11 @@
   <body>
     <div id="calculator-container"></div>
 
-    <script src="./stoneham-override-calculator.js"></script>
-    <script>
-      window.stonehamOverrideCalculator.renderCalculator(
-        "calculator-container",
-      );
-    </script>
+    <script
+      src="./stoneham-override-calculator.js"
+      async
+      defer
+      onload="window.stonehamOverrideCalculator.renderCalculator('calculator-container')"
+    ></script>
   </body>
 </html>

@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "preact/hooks";
 import {
   Combobox,
   ComboboxInput,
@@ -8,123 +7,21 @@ import {
   ComboboxOptions,
 } from "@headlessui/react";
 import { NumericFormat } from "react-number-format";
-import Fuse from "fuse.js";
-import PROPERTIES from "./properties.json";
+import {
+  DEFAULT_ASSESSED_VALUE,
+  DEFAULT_OVERRIDE_AMOUNT,
+  formatDollars,
+  useCalculator,
+} from "./use-calculator";
 
-/** The default value to populate the "Override" field with. */
-const DEFAULT_OVERRIDE_AMOUNT = 5_000_000;
-/** The default value to populate the "Assessed" field with. */
-const DEFAULT_ASSESSED_VALUE = 765_770;
-/** The current tax rate for the town multiplied by 100 (e.g. 10.23% should be 1023) */
-const CURRENT_TAX_RATE = 1_023;
-/** The ratio used to calculate the tax rate impact of the override amount. */
-const OVERRIDE_TAX_RATE_RATIO = 150_685;
-
-/** Format a number as a dollar amount. */
-const formatDollars = (val: number) => {
-  return Number(val / 100).toLocaleString("en-US", {
-    style: "currency",
-    currency: "USD",
-  });
-};
-
-/** Fuse.js instance for searching properties. */
-const fuse = new Fuse(PROPERTIES, {
-  keys: ["#"],
-  threshold: 0.2,
-});
-
-interface Address {
-  /** The address of the property. */
-  address: string;
-  /** The assessed property value */
-  value: number;
-}
-
+/**
+ * Calculator component for the Stoneham Override Calculator.
+ *
+ * Renders a form for inputting property information and displays
+ *   calculated tax impact results.
+ */
 export const Calculator = () => {
-  const [isLoading, setIsLoading] = useState(false);
-  const [suggestions, setSuggestions] = useState<Address[]>([]);
-
-  const fetchSuggestions = useCallback(async (searchQuery: string) => {
-    setIsLoading(true);
-    try {
-      const data = fuse
-        .search(searchQuery)
-        .slice(0, 10)
-        .map(({ item }) => ({
-          address: item["#"],
-          value: item.$,
-        }));
-      setSuggestions(data);
-    } catch (error) {
-      console.error("Error fetching suggestions:", error);
-      setSuggestions([]);
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
-  const debouncedFetchSuggestions = useCallback(
-    (() => {
-      let timeoutId: NodeJS.Timeout;
-      return (searchQuery: string) => {
-        setIsLoading(true);
-        clearTimeout(timeoutId);
-        timeoutId = setTimeout(() => fetchSuggestions(searchQuery), 200);
-      };
-    })(),
-    [fetchSuggestions],
-  );
-  const [selectedProperty, setSelectedProperty] = useState<Address | null>(
-    null,
-  );
-  const [query, setQuery] = useState("");
-  const [assessedValue, setAssessedValue] = useState<number | undefined>(
-    DEFAULT_ASSESSED_VALUE,
-  );
-  const [overrideValue, setOverrideValue] = useState<number | undefined>(
-    DEFAULT_OVERRIDE_AMOUNT,
-  );
-  const [calculatedValues, setCalculatedValues] = useState({
-    currentTaxRate: "",
-    newTaxRate: "",
-    newTaxRateImpact: "",
-    currentTaxBillYearly: "",
-    newTaxBillYearly: "",
-    currentTaxBillQuarterly: "",
-    newTaxBillQuarterly: "",
-    estimatedTaxImpactYearly: "",
-    estimatedTaxImpactQuarterly: "",
-    estimatedTaxImpactMonthly: "",
-    estimatedTaxImpactDaily: "",
-  });
-
-  useEffect(() => {
-    const proposedNewTaxRate =
-      CURRENT_TAX_RATE +
-      ((overrideValue ?? 0) * OVERRIDE_TAX_RATE_RATIO) / 10_000_000_000;
-    const taxImpact = proposedNewTaxRate - CURRENT_TAX_RATE;
-    const currentTaxBill = ((assessedValue ?? 0) / 1000) * CURRENT_TAX_RATE;
-    const newTaxBill = ((assessedValue ?? 0) / 1000) * proposedNewTaxRate;
-    const taxBillImpactYearly = newTaxBill - currentTaxBill;
-    const taxBillImpactQuarterly = taxBillImpactYearly / 4;
-    const taxBillImpactMonthly = taxBillImpactYearly / 12;
-    const taxBillImpactDaily = taxBillImpactYearly / 365;
-
-    setCalculatedValues({
-      currentTaxRate: formatDollars(CURRENT_TAX_RATE),
-      newTaxRate: formatDollars(proposedNewTaxRate),
-      newTaxRateImpact: formatDollars(taxImpact),
-      currentTaxBillYearly: formatDollars(currentTaxBill),
-      newTaxBillYearly: formatDollars(newTaxBill),
-      currentTaxBillQuarterly: formatDollars(currentTaxBill / 4),
-      newTaxBillQuarterly: formatDollars(newTaxBill / 4),
-      estimatedTaxImpactYearly: formatDollars(taxBillImpactYearly),
-      estimatedTaxImpactQuarterly: formatDollars(taxBillImpactQuarterly),
-      estimatedTaxImpactMonthly: formatDollars(taxBillImpactMonthly),
-      estimatedTaxImpactDaily: formatDollars(taxBillImpactDaily),
-    });
-  }, [assessedValue, overrideValue, selectedProperty]);
+  const calculator = useCalculator();
 
   return (
     <article id="stoneham-override-calculator" className="calculator">
@@ -137,40 +34,29 @@ export const Calculator = () => {
                 Your Property Address
               </label>
               <Combobox
-                value={selectedProperty}
-                onChange={(property) => {
-                  setSelectedProperty(property);
-                  if (property) {
-                    setAssessedValue(property.value);
-                    setQuery(property.address);
-                  }
-                }}
+                value={calculator.selectedProperty}
+                onChange={calculator.onPropertyChange}
               >
                 <div className="calculator__combobox">
                   <ComboboxInput
                     id="propertyAddress"
                     className="calculator__input calculator__input--combobox"
                     placeholder="Enter your property address"
-                    displayValue={(
-                      property: { address: string; value: number } | null,
-                    ) => property?.address ?? query}
-                    onChange={(event) => {
-                      const value = (event.target as HTMLInputElement).value;
-                      setQuery(value);
-                      debouncedFetchSuggestions(value);
-                    }}
+                    displayValue={calculator.getDisplayValue}
+                    onChange={calculator.onAddressInputChange}
                   />
                   <ComboboxOptions className="calculator__combobox-options">
-                    {isLoading ? (
+                    {calculator.isLoading ? (
                       <div className="calculator__combobox-message">
                         Loading...
                       </div>
-                    ) : suggestions.length === 0 && query.length > 2 ? (
+                    ) : calculator.suggestions.length === 0 &&
+                      calculator.query.length > 2 ? (
                       <div className="calculator__combobox-message">
                         No properties found
                       </div>
                     ) : (
-                      suggestions.map((suggestion, index) => (
+                      calculator.suggestions.map((suggestion, index) => (
                         <ComboboxOption
                           key={index}
                           value={suggestion}
@@ -202,9 +88,11 @@ export const Calculator = () => {
                   className="calculator__input calculator__input--numeric"
                   name="Your assessment value"
                   type="text"
-                  value={assessedValue}
-                  onValueChange={(e) => setAssessedValue(e.floatValue)}
-                  placeholder={DEFAULT_ASSESSED_VALUE.toLocaleString()}
+                  value={calculator.assessedValue}
+                  onValueChange={(e) =>
+                    calculator.onAssessedValueChange(e.floatValue)
+                  }
+                  placeholder={formatDollars(DEFAULT_ASSESSED_VALUE)}
                   thousandSeparator={true}
                   allowNegative={false}
                   decimalScale={0}
@@ -225,9 +113,11 @@ export const Calculator = () => {
                   className="calculator__input calculator__input--numeric"
                   name="New override amount"
                   type="text"
-                  value={overrideValue}
-                  onValueChange={(e) => setOverrideValue(e.floatValue)}
-                  placeholder={DEFAULT_OVERRIDE_AMOUNT.toLocaleString()}
+                  value={calculator.overrideValue}
+                  onValueChange={(e) =>
+                    calculator.onOverrideValueChange(e.floatValue)
+                  }
+                  placeholder={formatDollars(DEFAULT_OVERRIDE_AMOUNT)}
                   thousandSeparator={true}
                   allowNegative={false}
                   decimalScale={0}
@@ -249,7 +139,7 @@ export const Calculator = () => {
               (per $1,000)
             </dd>
             <dd className="calculator__detail calculator__detail--value">
-              {calculatedValues.currentTaxRate}
+              {calculator.calculatedValues.currentTaxRate}
             </dd>
           </div>
 
@@ -259,7 +149,7 @@ export const Calculator = () => {
               (per $1,000)
             </dd>
             <dd className="calculator__detail calculator__detail--value">
-              {calculatedValues.newTaxRate}
+              {calculator.calculatedValues.newTaxRate}
             </dd>
           </div>
 
@@ -269,7 +159,7 @@ export const Calculator = () => {
               (per $1,000)
             </dd>
             <dd className="calculator__detail calculator__detail--value">
-              {calculatedValues.newTaxRateImpact}
+              {calculator.calculatedValues.newTaxRateImpact}
             </dd>
           </div>
         </dl>
@@ -281,28 +171,28 @@ export const Calculator = () => {
           <div className="calculator__data-item">
             <dt className="calculator__term">Current Annual Bill</dt>
             <dd className="calculator__detail calculator__detail--value">
-              {calculatedValues.currentTaxBillYearly}
+              {calculator.calculatedValues.currentTaxBillYearly}
             </dd>
           </div>
 
           <div className="calculator__data-item">
             <dt className="calculator__term">Proposed Annual Bill</dt>
             <dd className="calculator__detail calculator__detail--value">
-              {calculatedValues.newTaxBillYearly}
+              {calculator.calculatedValues.newTaxBillYearly}
             </dd>
           </div>
 
           <div className="calculator__data-item">
             <dt className="calculator__term">Current Quarterly Bill</dt>
             <dd className="calculator__detail calculator__detail--value">
-              {calculatedValues.currentTaxBillQuarterly}
+              {calculator.calculatedValues.currentTaxBillQuarterly}
             </dd>
           </div>
 
           <div className="calculator__data-item">
             <dt className="calculator__term">Proposed Quarterly Bill</dt>
             <dd className="calculator__detail calculator__detail--value">
-              {calculatedValues.newTaxBillQuarterly}
+              {calculator.calculatedValues.newTaxBillQuarterly}
             </dd>
           </div>
         </dl>
@@ -314,28 +204,28 @@ export const Calculator = () => {
           <div className="calculator__data-item">
             <dt className="calculator__term">Annual Impact:</dt>
             <dd className="calculator__detail calculator__detail--value">
-              {calculatedValues.estimatedTaxImpactYearly}
+              {calculator.calculatedValues.estimatedTaxImpactYearly}
             </dd>
           </div>
 
           <div className="calculator__data-item">
             <dt className="calculator__term">Quarterly Impact:</dt>
             <dd className="calculator__detail calculator__detail--value">
-              {calculatedValues.estimatedTaxImpactQuarterly}
+              {calculator.calculatedValues.estimatedTaxImpactQuarterly}
             </dd>
           </div>
 
           <div className="calculator__data-item">
             <dt className="calculator__term">Monthly Impact:</dt>
             <dd className="calculator__detail calculator__detail--value">
-              {calculatedValues.estimatedTaxImpactMonthly}
+              {calculator.calculatedValues.estimatedTaxImpactMonthly}
             </dd>
           </div>
 
           <div className="calculator__data-item">
             <dt className="calculator__term">Daily Impact:</dt>
             <dd className="calculator__detail calculator__detail--value">
-              {calculatedValues.estimatedTaxImpactDaily}
+              {calculator.calculatedValues.estimatedTaxImpactDaily}
             </dd>
           </div>
         </dl>
