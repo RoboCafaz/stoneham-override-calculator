@@ -127,14 +127,15 @@ export const Calculator = () => {
   }, [assessedValue, overrideValue, selectedProperty]);
 
   return (
-    <div id="stoneham-override-calculator">
-      {/* Input Section */}
-      <section>
-        <h2>Calculator Inputs</h2>
-        <div>
-          <div>
-            <div>
-              <label htmlFor="propertyAddress">Your Property Address</label>
+    <article id="stoneham-override-calculator" className="calculator">
+      <section className="calculator__inputs">
+        <h2 className="calculator__heading">Calculator Inputs</h2>
+        <form className="calculator__form">
+          <fieldset className="calculator__fieldset">
+            <div className="calculator__field">
+              <label htmlFor="propertyAddress" className="calculator__label">
+                Your Property Address
+              </label>
               <Combobox
                 value={selectedProperty}
                 onChange={(property) => {
@@ -145,9 +146,10 @@ export const Calculator = () => {
                   }
                 }}
               >
-                <div>
+                <div className="calculator__combobox">
                   <ComboboxInput
                     id="propertyAddress"
+                    className="calculator__input calculator__input--combobox"
                     placeholder="Enter your property address"
                     displayValue={(
                       property: { address: string; value: number } | null,
@@ -158,16 +160,26 @@ export const Calculator = () => {
                       debouncedFetchSuggestions(value);
                     }}
                   />
-                  <ComboboxOptions>
+                  <ComboboxOptions className="calculator__combobox-options">
                     {isLoading ? (
-                      <div>Loading...</div>
+                      <div className="calculator__combobox-message">
+                        Loading...
+                      </div>
                     ) : suggestions.length === 0 && query.length > 2 ? (
-                      <div>No properties found</div>
+                      <div className="calculator__combobox-message">
+                        No properties found
+                      </div>
                     ) : (
                       suggestions.map((suggestion, index) => (
-                        <ComboboxOption key={index} value={suggestion}>
-                          <div>{suggestion.address}</div>
-                          <div>
+                        <ComboboxOption
+                          key={index}
+                          value={suggestion}
+                          className="calculator__combobox-option"
+                        >
+                          <div className="calculator__combobox-option-address">
+                            {suggestion.address}
+                          </div>
+                          <div className="calculator__combobox-option-value">
                             Assessed Value:{" "}
                             {formatDollars(suggestion.value * 100)}
                           </div>
@@ -179,12 +191,15 @@ export const Calculator = () => {
               </Combobox>
             </div>
 
-            <div>
-              <label htmlFor="yourValue">Your Assessed Property Value</label>
-              <div>
-                <span>$</span>
+            <div className="calculator__field">
+              <label htmlFor="yourValue" className="calculator__label">
+                Your Assessed Property Value
+              </label>
+              <div className="calculator__input-wrapper">
+                <span className="calculator__currency-symbol">$</span>
                 <NumericFormat
                   id="yourValue"
+                  className="calculator__input calculator__input--numeric"
                   name="Your assessment value"
                   type="text"
                   value={assessedValue}
@@ -199,14 +214,15 @@ export const Calculator = () => {
               </div>
             </div>
 
-            <div>
-              <label htmlFor="overrideValue">
+            <div className="calculator__field">
+              <label htmlFor="overrideValue" className="calculator__label">
                 Hypothetical Override Amount
               </label>
-              <div>
-                <span>$</span>
+              <div className="calculator__input-wrapper">
+                <span className="calculator__currency-symbol">$</span>
                 <NumericFormat
                   id="overrideValue"
+                  className="calculator__input calculator__input--numeric"
                   name="New override amount"
                   type="text"
                   value={overrideValue}
@@ -220,98 +236,117 @@ export const Calculator = () => {
                 />
               </div>
             </div>
-          </div>
-        </div>
+          </fieldset>
+        </form>
       </section>
 
-      {/* Tax Rate Results */}
-      <section>
-        <h2>Estimated Tax Rate Impact</h2>
-        <div>
-          <div>
-            <div>
-              <div>Current Tax Rate</div>
-              <div>(per $1,000)</div>
-              <div>{calculatedValues.currentTaxRate}</div>
-            </div>
-
-            <div>
-              <div>Proposed Tax Rate</div>
-              <div>(per $1,000)</div>
-              <div>{calculatedValues.newTaxRate}</div>
-            </div>
-
-            <div>
-              <div>Rate Increase</div>
-              <div>(per $1,000)</div>
-              <div>{calculatedValues.newTaxRateImpact}</div>
-            </div>
+      <section className="calculator__results calculator__results--tax-rate">
+        <h2 className="calculator__heading">Estimated Tax Rate Impact</h2>
+        <dl className="calculator__data-list">
+          <div className="calculator__data-item">
+            <dt className="calculator__term">Current Tax Rate</dt>
+            <dd className="calculator__detail calculator__detail--unit">
+              (per $1,000)
+            </dd>
+            <dd className="calculator__detail calculator__detail--value">
+              {calculatedValues.currentTaxRate}
+            </dd>
           </div>
-        </div>
+
+          <div className="calculator__data-item">
+            <dt className="calculator__term">Proposed Tax Rate</dt>
+            <dd className="calculator__detail calculator__detail--unit">
+              (per $1,000)
+            </dd>
+            <dd className="calculator__detail calculator__detail--value">
+              {calculatedValues.newTaxRate}
+            </dd>
+          </div>
+
+          <div className="calculator__data-item">
+            <dt className="calculator__term">Rate Increase</dt>
+            <dd className="calculator__detail calculator__detail--unit">
+              (per $1,000)
+            </dd>
+            <dd className="calculator__detail calculator__detail--value">
+              {calculatedValues.newTaxRateImpact}
+            </dd>
+          </div>
+        </dl>
       </section>
 
-      {/* Tax Bill Comparison */}
-      <section>
-        <h2>Your Estimated Tax Bill</h2>
-        <div>
-          <div>
-            <div>
-              <div>Current Annual Bill</div>
-              <div>{calculatedValues.currentTaxBillYearly}</div>
-            </div>
-
-            <div>
-              <div>Proposed Annual Bill</div>
-              <div>{calculatedValues.newTaxBillYearly}</div>
-            </div>
-
-            <div>
-              <div>Current Quarterly Bill</div>
-              <div>{calculatedValues.currentTaxBillQuarterly}</div>
-            </div>
-
-            <div>
-              <div>Proposed Quarterly Bill</div>
-              <div>{calculatedValues.newTaxBillQuarterly}</div>
-            </div>
+      <section className="calculator__results calculator__results--tax-bill">
+        <h2 className="calculator__heading">Your Estimated Tax Bill</h2>
+        <dl className="calculator__data-list">
+          <div className="calculator__data-item">
+            <dt className="calculator__term">Current Annual Bill</dt>
+            <dd className="calculator__detail calculator__detail--value">
+              {calculatedValues.currentTaxBillYearly}
+            </dd>
           </div>
-        </div>
+
+          <div className="calculator__data-item">
+            <dt className="calculator__term">Proposed Annual Bill</dt>
+            <dd className="calculator__detail calculator__detail--value">
+              {calculatedValues.newTaxBillYearly}
+            </dd>
+          </div>
+
+          <div className="calculator__data-item">
+            <dt className="calculator__term">Current Quarterly Bill</dt>
+            <dd className="calculator__detail calculator__detail--value">
+              {calculatedValues.currentTaxBillQuarterly}
+            </dd>
+          </div>
+
+          <div className="calculator__data-item">
+            <dt className="calculator__term">Proposed Quarterly Bill</dt>
+            <dd className="calculator__detail calculator__detail--value">
+              {calculatedValues.newTaxBillQuarterly}
+            </dd>
+          </div>
+        </dl>
       </section>
 
-      <section>
-        <h2>Your Estimated Tax Impact</h2>
-        <div>
-          <div>
-            <div>
-              <div>
-                <span>Annual Impact:</span>
-                <span>{calculatedValues.estimatedTaxImpactYearly}</span>
-              </div>
-
-              <div>
-                <span>Quarterly Impact:</span>
-                <span>{calculatedValues.estimatedTaxImpactQuarterly}</span>
-              </div>
-
-              <div>
-                <span>Monthly Impact:</span>
-                <span>{calculatedValues.estimatedTaxImpactMonthly}</span>
-              </div>
-
-              <div>
-                <span>Daily Impact:</span>
-                <span>{calculatedValues.estimatedTaxImpactDaily}</span>
-              </div>
-            </div>
+      <section className="calculator__results calculator__results--tax-impact">
+        <h2 className="calculator__heading">Your Estimated Tax Impact</h2>
+        <dl className="calculator__data-list">
+          <div className="calculator__data-item">
+            <dt className="calculator__term">Annual Impact:</dt>
+            <dd className="calculator__detail calculator__detail--value">
+              {calculatedValues.estimatedTaxImpactYearly}
+            </dd>
           </div>
-        </div>
+
+          <div className="calculator__data-item">
+            <dt className="calculator__term">Quarterly Impact:</dt>
+            <dd className="calculator__detail calculator__detail--value">
+              {calculatedValues.estimatedTaxImpactQuarterly}
+            </dd>
+          </div>
+
+          <div className="calculator__data-item">
+            <dt className="calculator__term">Monthly Impact:</dt>
+            <dd className="calculator__detail calculator__detail--value">
+              {calculatedValues.estimatedTaxImpactMonthly}
+            </dd>
+          </div>
+
+          <div className="calculator__data-item">
+            <dt className="calculator__term">Daily Impact:</dt>
+            <dd className="calculator__detail calculator__detail--value">
+              {calculatedValues.estimatedTaxImpactDaily}
+            </dd>
+          </div>
+        </dl>
       </section>
 
-      <footer>
-        <p>
+      <footer className="calculator__footer">
+        <p className="calculator__disclaimer">
           Methodology derived from{" "}
           <a
             href="https://dlsgateway.dor.state.ma.us/reports/rdPage.aspx?rdReport=Analysis.TaxImpactCalc"
+            className="calculator__link"
             target="_blank"
             rel="noopener noreferrer"
           >
@@ -322,6 +357,7 @@ export const Calculator = () => {
           public record via{" "}
           <a
             href="https://stoneham.patriotproperties.com/default.asp"
+            className="calculator__link"
             target="_blank"
             rel="noopener noreferrer"
           >
@@ -334,6 +370,7 @@ export const Calculator = () => {
           Properties, nor any other official entity. Source code available via{" "}
           <a
             href="https://github.com/RoboCafaz/stoneham-override-calculator"
+            className="calculator__link"
             target="_blank"
           >
             GitHub
@@ -341,6 +378,6 @@ export const Calculator = () => {
           .
         </p>
       </footer>
-    </div>
+    </article>
   );
 };
