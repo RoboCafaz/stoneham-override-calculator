@@ -16,14 +16,14 @@
  * The tax rate impact is calculated using the following formula:
  *
  * ```
- * New Tax Rate = Current Tax Rate + (Override Amount × Override Ratio / 10,000,000,000)
+ * New Tax Rate = Current Tax Rate + (Override Amount × Rate Impact Per Dollar)
  * ```
  *
  * Where:
- * - **Current Tax Rate**: The current tax rate per $1,000 of assessed value (in cents)
- * - **Override Amount**: The proposed override amount in dollars
- * - **Override Ratio**: A town-specific ratio derived from the residential tax rate impact
- *   per dollar of override, based on empirical data from MA DOR calculations
+ * - **Current Tax Rate**: The current tax rate per $1,000 of assessed value (dollars)
+ * - **Override Amount**: The proposed override amount (dollars)
+ * - **Rate Impact Per Dollar**: The residential tax rate increase per $1 of override,
+ *   derived empirically from MA DOR calculations (≈0.000150685 for Stoneham FY2025)
  *
  * ### Tax Bill Calculation
  *
@@ -64,16 +64,13 @@ export const DEFAULT_OVERRIDE_AMOUNT = 5_000_000;
 export const DEFAULT_ASSESSED_VALUE = 765_770;
 
 /**
- * The current tax rate for Stoneham, MA (FY2025) multiplied by 100.
- * Stored as cents to avoid floating-point precision issues.
- *
- * @example
- * A rate of $10.23 per $1,000 is stored as 1023
+ * The current tax rate for Stoneham, MA (FY2025).
+ * Rate per $1,000 of assessed value.
  */
-export const CURRENT_TAX_RATE = 1_023;
+export const CURRENT_TAX_RATE = 10.23;
 
 /**
- * The override tax rate ratio for Stoneham, MA (FY2025).
+ * The tax rate impact per dollar of override for Stoneham, MA (FY2025).
  * This ratio is used to calculate the residential (RO) tax rate increase per dollar of override.
  *
  * @remarks
@@ -87,45 +84,31 @@ export const CURRENT_TAX_RATE = 1_023;
  *
  * Calculation:
  * ```
- * Override Ratio = (Tax Rate Impact × 10,000,000,000) / Override Amount
- * Override Ratio = (2.20 × 10,000,000,000) / 14,600,000
- * Override Ratio ≈ 1,506.85
+ * Rate Impact Per Dollar = Tax Rate Impact / Override Amount
+ * Rate Impact Per Dollar = 2.20 / 14,600,000
+ * Rate Impact Per Dollar ≈ 1.507e-7
  * ```
- * Stored as integer (scaled by 100): **150,685**
  *
- * **Why 10,000,000,000?**
- * The 10 billion scaling factor is used to store the ratio as an integer, avoiding
- * floating-point precision issues. Without it, the ratio would be 0.000150685
- * (rate impact per dollar of override). Multiplying by 10 billion produces a
- * manageable integer in the 100,000-200,000 range that can be stored precisely.
+ * This means for every $1 of override, the residential tax rate increases by
+ * approximately $0.0000001507 per $1,000 of assessed value.
  *
  * This ratio remains relatively constant across different override amounts because
  * the relationship between override levy and tax rate impact is linear based on
  * the total residential assessed value.
  */
-export const OVERRIDE_TAX_RATE_RATIO = 150_685;
+export const RATE_IMPACT_PER_OVERRIDE_DOLLAR = 2.2 / 14_600_000;
 
 /**
  * Format a number as a dollar amount.
  *
- * Converts a value stored in cents to a formatted USD string.
- * Using cents internally avoids floating-point precision issues in calculations.
- *
- * @param val - The value to format (in cents)
+ * @param val - The value to format in dollars
  * @returns A formatted dollar string (e.g., "$10.23")
- *
- * @example
- * ```typescript
- * formatDollars(1023) // Returns "$10.23"
- * formatDollars(500000) // Returns "$5,000.00"
- * ```
  */
-export const formatDollars = (val: number) => {
-  return Number(val / 100).toLocaleString("en-US", {
+export const formatDollars = (val: number) =>
+  val.toLocaleString("en-US", {
     style: "currency",
     currency: "USD",
   });
-};
 
 /**
  * Fuse.js instance for fuzzy searching property addresses.
@@ -327,39 +310,29 @@ export const useCalculator = (): UseCalculatorReturn => {
    * 2. Calculate current and proposed tax bills
    * 3. Calculate the difference (impact) for various time periods
    * 4. Format all values as currency strings for display
-   *
-   * @remarks
-   * All monetary values are kept in cents during calculation to avoid floating-point
-   * precision issues, then converted to dollars for display using formatDollars().
    */
   useEffect(() => {
-    // Step 1: Calculate the proposed new tax rate
-    // Formula: Current Rate + (Override Amount × Override Ratio / 10,000,000,000)
-    // The division by 10 billion reverses the scaling factor used in OVERRIDE_TAX_RATE_RATIO
-    // to get the actual rate impact in cents per $1,000 of assessed value
-    const proposedNewTaxRate =
-      CURRENT_TAX_RATE +
-      ((overrideValue ?? 0) * OVERRIDE_TAX_RATE_RATIO) / 10_000_000_000;
+    // Step 1: Calculate the proposed new tax rate (per $1,000 of assessed value)
+    // Formula: Current Rate + (Override Amount × Rate Impact Per Dollar)
+    const rateImpact = (overrideValue ?? 0) * RATE_IMPACT_PER_OVERRIDE_DOLLAR;
+    const proposedNewTaxRate = CURRENT_TAX_RATE + rateImpact;
 
-    // Step 2: Calculate the tax rate increase
-    const taxImpact = proposedNewTaxRate - CURRENT_TAX_RATE;
-
-    // Step 3: Calculate current and new tax bills
+    // Step 2: Calculate current and proposed tax bills
     // Formula: (Assessed Value / 1000) × Tax Rate
-    const currentTaxBill = ((assessedValue ?? 0) / 1000) * CURRENT_TAX_RATE;
-    const newTaxBill = ((assessedValue ?? 0) / 1000) * proposedNewTaxRate;
+    const currentTaxBill = ((assessedValue ?? 0) / 1_000) * CURRENT_TAX_RATE;
+    const newTaxBill = ((assessedValue ?? 0) / 1_000) * proposedNewTaxRate;
 
-    // Step 4: Calculate the tax bill impact for various time periods
+    // Step 3: Calculate the tax bill impact for various time periods
     const taxBillImpactYearly = newTaxBill - currentTaxBill;
     const taxBillImpactQuarterly = taxBillImpactYearly / 4;
     const taxBillImpactMonthly = taxBillImpactYearly / 12;
     const taxBillImpactDaily = taxBillImpactYearly / 365;
 
-    // Step 5: Format all values as currency strings and update state
+    // Step 4: Format all values as currency strings and update state
     setCalculatedValues({
       currentTaxRate: formatDollars(CURRENT_TAX_RATE),
       newTaxRate: formatDollars(proposedNewTaxRate),
-      newTaxRateImpact: formatDollars(taxImpact),
+      newTaxRateImpact: formatDollars(rateImpact),
       currentTaxBillYearly: formatDollars(currentTaxBill),
       newTaxBillYearly: formatDollars(newTaxBill),
       currentTaxBillQuarterly: formatDollars(currentTaxBill / 4),
