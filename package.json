@@ -2,6 +2,8 @@
   "name": "stoneham-override-calculator",
   "type": "module",
   "packageManager": "yarn@4.10.3",
+  "author": "Robert Cafazzo <robocafaz@gmail.com>",
+  "license": "MIT",
   "scripts": {
     "build": "yarn clean && node build.mjs",
     "clean": "rm -rf dist",
