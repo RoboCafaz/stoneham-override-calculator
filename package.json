@@ -1,0 +1,31 @@
+{
+  "name": "stoneham-override-calculator",
+  "type": "module",
+  "packageManager": "yarn@4.10.3",
+  "scripts": {
+    "build": "yarn clean && node build.mjs",
+    "clean": "rm -rf dist",
+    "format": "prettier --write .",
+    "start": "yarn build && serve dist -p 3000",
+    "test": "jest",
+    "type-check": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/jest": "^30.0.0",
+    "@types/node": "^22",
+    "add": "^2.0.6",
+    "esbuild": "^0.25.10",
+    "jest": "^30.2.0",
+    "prettier": "^3.6.2",
+    "serve": "^14.2.5",
+    "ts-jest": "^29.4.4",
+    "typescript": "^5.9.2",
+    "yarn": "^1.22.22"
+  },
+  "dependencies": {
+    "@headlessui/react": "^2.2.9",
+    "fuse.js": "^7.1.0",
+    "preact": "^10.27.2",
+    "react-number-format": "^5.4.4"
+  }
+}
