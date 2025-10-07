@@ -21,9 +21,21 @@ jobs:
       - name: Build project
         run: yarn build
 
-      - name: Upload dist artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: stoneham-override-calculator-dist
-          path: dist/
-          retention-days: 90
+      - name: Create release archive
+        run: |
+          cd dist
+          zip -r ../stoneham-override-calculator-${{ github.event.release.tag_name }}.zip .
+          cd ..
+
+      - name: Upload release assets
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Upload the zip archive
+          gh release upload ${{ github.event.release.tag_name }} stoneham-override-calculator-${{ github.event.release.tag_name }}.zip
+
+          # Upload individual files as well
+          gh release upload ${{ github.event.release.tag_name }} dist/stoneham-override-calculator.js
+          gh release upload ${{ github.event.release.tag_name }} dist/stoneham-override-calculator.js.map
+          gh release upload ${{ github.event.release.tag_name }} dist/index.html
+          gh release upload ${{ github.event.release.tag_name }} dist/style.css
