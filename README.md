@@ -27,7 +27,10 @@ yarn install
 yarn build
 ```
 
-This generates `dist/stoneham-override-calculator.js` and `dist/index.html`.
+This generates both minified and non-minified versions:
+- `dist/stoneham-override-calculator.min.js` (minified for production)
+- `dist/stoneham-override-calculator.js` (non-minified for debugging)
+- `dist/index.html` (example page using the minified version)
 
 ### Injecting the Calculator
 
@@ -36,12 +39,23 @@ Add the calculator to any HTML page:
 ```html
 <div id="calculator-container"></div>
 
+<!-- Use the minified version for production -->
+<script
+  src="./stoneham-override-calculator.min.js"
+  async
+  defer
+  onload="window.stonehamOverrideCalculator.renderCalculator('calculator-container')"
+></script>
+
+<!-- Or use the non-minified version for debugging -->
+<!-- 
 <script
   src="./stoneham-override-calculator.js"
   async
   defer
   onload="window.stonehamOverrideCalculator.renderCalculator('calculator-container')"
 ></script>
+-->
 ```
 
 The `renderCalculator` function accepts the ID of the container element where the calculator should be rendered.
