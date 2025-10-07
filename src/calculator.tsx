@@ -66,8 +66,7 @@ export const Calculator = () => {
                             {suggestion.address}
                           </div>
                           <div className="calculator__combobox-option-value">
-                            Assessed Value:{" "}
-                            {formatDollars(suggestion.value)}
+                            Assessed Value: {formatDollars(suggestion.value)}
                           </div>
                         </ComboboxOption>
                       ))

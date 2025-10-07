@@ -1,5 +1,7 @@
 # Stoneham Override Calculator
 
+[![GitHub Pages](https://img.shields.io/badge/GitHub%20Pages-Live%20Demo-blue)](https://robocafaz.github.io/stoneham-override-calculator/)
+
 A property tax override calculator for the town of Stoneham, MA. This calculator helps residents estimate the impact of proposed Proposition 2½ overrides on their property tax bills.
 
 ## What It Does
