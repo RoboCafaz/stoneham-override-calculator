@@ -20,7 +20,49 @@ Users can either:
 
 ### Methodology
 
-See the comments in [src/use-calculator.ts](./src/use-calculator.ts) for full write-up of methodology.
+This calculator is based on the **Massachusetts Department of Revenue's Division of Local Services Tax Impact Calculator methodology** for Stoneham (FY2025), but uses **linear regression** to project tax impacts rather than performing a full levy calculation.
+
+#### Data Foundation
+
+The calculator uses 5 data points provided by the Massachusetts DOR Division of Local Services that show the relationship between override amounts and their impact on tax rates:
+
+| Override Amount | Tax Rate Impact (per $1,000) |
+| --------------- | ---------------------------- |
+| $1,000,000      | $0.15                        |
+| $5,000,000      | $0.75                        |
+| $14,600,000     | $2.20                        |
+| $25,000,000     | $3.77                        |
+| $50,000,000     | $7.55                        |
+
+#### Linear Regression Model
+
+Using linear regression on these official DOR data points yields a near-perfect linear relationship (R² = 0.999999):
+
+**y = 0.00000015105x - 0.00412**
+
+Where:
+
+- **y** = tax rate impact (dollars per $1,000 of assessed value)
+- **x** = override amount (dollars)
+
+#### Tax Impact Calculation Process
+
+1. **Calculate Tax Rate Impact**: Apply the linear equation to determine the rate increase per $1,000 of assessed value
+2. **Calculate New Tax Rate**: Add the rate impact to the current tax rate ($10.23 per $1,000 for Stoneham FY2025)
+3. **Calculate Tax Bills**: Apply both current and proposed rates to the property's assessed value
+4. **Calculate Personal Impact**: Determine the difference across multiple time periods (annual, quarterly, monthly, daily)
+
+#### Important Disclaimers
+
+**Estimation Method**: This calculator uses linear regression to project tax impacts rather than the full levy calculation methodology used by the DOR. While based on official DOR data, **estimates may be slightly different** from official calculations due to:
+
+- Rounding differences in the linear regression model
+- Tax rate truncation to two decimal places
+- Simplified calculation approach vs. full municipal levy calculations
+
+**Official Use**: This calculator is for **demonstration and estimation purposes only**. Actual tax impacts may vary based on final override amounts, assessed property values, and other adjustments to the tax levy. This tool is not approved or endorsed by the town of Stoneham, the Massachusetts Department of Revenue, or any other official entity.
+
+For complete technical details, see the comments in [src/use-calculator.ts](./src/use-calculator.ts).
 
 ## Usage
 
@@ -104,6 +146,6 @@ See `example/style.css` for a complete styling reference and `src/calculator.tsx
 
 ### Methodology
 
-Tax calculations are based on the [Massachusetts Department of Revenue's Division of Local Services Tax Impact Calculator](https://dlsgateway.dor.state.ma.us/reports/rdPage.aspx?rdReport=Analysis.TaxImpactCalc) for Stoneham (FY2025). Property assessments are sourced from public records via the [Stoneham Patriot Properties website](https://stoneham.patriotproperties.com/default.asp).
+**Tax Calculation Approach**: This calculator is based on the [Massachusetts Department of Revenue's Division of Local Services Tax Impact Calculator](https://dlsgateway.dor.state.ma.us/reports/rdPage.aspx?rdReport=Analysis.TaxImpactCalc) methodology for Stoneham (FY2025), but uses linear regression to project tax impacts rather than performing full levy calculations. Property assessments are sourced from public records via the [Stoneham Patriot Properties website](https://stoneham.patriotproperties.com/default.asp).
 
-**Disclaimer**: This calculator is for demonstration purposes only. Actual tax impact may vary based on final override amount, assessed property values, and other adjustments to the tax levy. Not approved or endorsed by any official entity.
+**Disclaimer**: This calculator is for demonstration purposes only. Estimates may be slightly different from official DOR calculations due to the linear regression approach and rounding differences. Actual tax impact may vary based on final override amount, assessed property values, and other adjustments to the tax levy. Not approved or endorsed by any official entity.
