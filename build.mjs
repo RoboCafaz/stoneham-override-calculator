@@ -7,10 +7,10 @@ const commonConfig = {
   bundle: true,
   sourcemap: true,
   target: ["es2020", "chrome58", "firefox57", "safari11"],
-  platform: "browser",
-  format: "iife",
+  platform: /** @type {"browser"} */ ("browser"),
+  format: /** @type {"iife"} */ ("iife"),
   globalName: "stonehamOverrideCalculator",
-  jsx: "automatic",
+  jsx: /** @type {"automatic"} */ ("automatic"),
   jsxImportSource: "preact",
   alias: {
     react: "preact/compat",
