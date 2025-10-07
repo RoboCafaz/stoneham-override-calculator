@@ -23,7 +23,7 @@
  * - **Current Tax Rate**: The current tax rate per $1,000 of assessed value (dollars)
  * - **Override Amount**: The proposed override amount (dollars)
  * - **Rate Impact Per Dollar**: The residential tax rate increase per $1 of override,
- *   derived empirically from MA DOR calculations (≈0.000150685 for Stoneham FY2025)
+ *   derived from MA DOR calculations (≈0.000150685 for Stoneham FY2025)
  *
  * ### Tax Bill Calculation
  *
@@ -70,33 +70,37 @@ export const DEFAULT_ASSESSED_VALUE = 765_770;
 export const CURRENT_TAX_RATE = 10.23;
 
 /**
- * The tax rate impact per dollar of override for Stoneham, MA (FY2025).
- * This ratio is used to calculate the residential (RO) tax rate increase per dollar of override.
+ * The tax rate impact calculation constants for Stoneham, MA (FY2025).
  *
- * @remarks
- * This ratio was derived empirically from Massachusetts DOR Division of Local Services
- * tax impact calculations for a $14.6M Proposition 2½ override in Stoneham FY2025:
+ * The relationship between override amount and tax rate impact is linear,
+ * derived from 5 data points provided by Massachusetts DOR Division of Local Services:
  *
- * - Override Amount: $14,600,000
- * - Residential Tax Rate Impact: $2.20 per $1,000
- * - RO Assessed Value: $5,540,472,703
- * - RO Levy Increase: $12,211,025 (83.6372% of total)
+ * | Override Amount | Tax Rate Impact (per $1,000) |
+ * |-----------------|------------------------------|
+ * | $1,000,000      | $0.15                        |
+ * | $5,000,000      | $0.75                        |
+ * | $14,600,000     | $2.20                        |
+ * | $25,000,000     | $3.77                        |
+ * | $50,000,000     | $7.55                        |
  *
- * Calculation:
- * ```
- * Rate Impact Per Dollar = Tax Rate Impact / Override Amount
- * Rate Impact Per Dollar = 2.20 / 14,600,000
- * Rate Impact Per Dollar ≈ 1.507e-7
- * ```
+ * Using linear regression on these points yields:
  *
- * This means for every $1 of override, the residential tax rate increases by
- * approximately $0.0000001507 per $1,000 of assessed value.
+ * **y = 0.00000015105x - 0.00412**
  *
- * This ratio remains relatively constant across different override amounts because
- * the relationship between override levy and tax rate impact is linear based on
- * the total residential assessed value.
+ * Where:
+ * - y = tax rate impact (dollars per $1,000 of assessed value)
+ * - x = override amount (dollars)
+ * - R² = 0.999999 (near-perfect linear fit)
+ *
+ * This can be rewritten as rate impact per dollar:
+ *
+ * **rate_impact_per_dollar = (0.00000015105x - 0.00412) / x**
+ *
+ * Simplifying:
+ * **rate_impact_per_dollar = 0.00000015105 - 0.00412/x**
  */
-export const RATE_IMPACT_PER_OVERRIDE_DOLLAR = 2.2 / 14_600_000;
+export const RATE_IMPACT_SLOPE = 0.00000015105;
+export const RATE_IMPACT_INTERCEPT = -0.00412;
 
 /**
  * Format a number as a dollar amount.
@@ -306,29 +310,37 @@ export const useCalculator = (): UseCalculatorReturn => {
    *
    * ## Calculation Steps:
    *
-   * 1. Calculate the new tax rate using the override formula
-   * 2. Calculate current and proposed tax bills
-   * 3. Calculate the difference (impact) for various time periods
-   * 4. Format all values as currency strings for display
+   * 1. Calculate the tax rate impact using linear equation: y = mx + b
+   * 2. Calculate the proposed new tax rate
+   * 3. Calculate current and proposed tax bills
+   * 4. Calculate the difference (impact) for various time periods
+   * 5. Format all values as currency strings for display
    */
   useEffect(() => {
-    // Step 1: Calculate the proposed new tax rate (per $1,000 of assessed value)
-    // Formula: Current Rate + (Override Amount × Rate Impact Per Dollar)
-    const rateImpact = (overrideValue ?? 0) * RATE_IMPACT_PER_OVERRIDE_DOLLAR;
-    const proposedNewTaxRate = CURRENT_TAX_RATE + rateImpact;
+    const currentOverride = overrideValue ?? 0;
 
-    // Step 2: Calculate current and proposed tax bills
+    // Step 1: Calculate the tax rate impact using the linear equation
+    // y = mx + b where y = tax rate impact (per $1,000), x = override amount
+    const rateImpact =
+      RATE_IMPACT_SLOPE * currentOverride + RATE_IMPACT_INTERCEPT;
+
+    // Step 2: Calculate the proposed new tax rate (per $1,000 of assessed value)
+    // Formula: Current Rate + Rate Impact -- truncated to 2 decimal places
+    const proposedNewTaxRate =
+      Math.trunc((CURRENT_TAX_RATE + rateImpact) * 100) / 100;
+
+    // Step 3: Calculate current and proposed tax bills
     // Formula: (Assessed Value / 1000) × Tax Rate
     const currentTaxBill = ((assessedValue ?? 0) / 1_000) * CURRENT_TAX_RATE;
     const newTaxBill = ((assessedValue ?? 0) / 1_000) * proposedNewTaxRate;
 
-    // Step 3: Calculate the tax bill impact for various time periods
+    // Step 4: Calculate the tax bill impact for various time periods
     const taxBillImpactYearly = newTaxBill - currentTaxBill;
     const taxBillImpactQuarterly = taxBillImpactYearly / 4;
     const taxBillImpactMonthly = taxBillImpactYearly / 12;
     const taxBillImpactDaily = taxBillImpactYearly / 365;
 
-    // Step 4: Format all values as currency strings and update state
+    // Step 5: Format all values as currency strings and update state
     setCalculatedValues({
       currentTaxRate: formatDollars(CURRENT_TAX_RATE),
       newTaxRate: formatDollars(proposedNewTaxRate),

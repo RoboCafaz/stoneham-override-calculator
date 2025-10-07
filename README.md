@@ -18,6 +18,10 @@ Users can either:
 - Manually enter their assessed property value
 - Adjust the hypothetical override amount to model different scenarios
 
+### Methodology
+
+See the comments in [src/use-calculator.ts](./src/use-calculator.ts) for full write-up of methodology.
+
 ## Usage
 
 ### Installation
@@ -28,6 +32,7 @@ yarn build
 ```
 
 This generates both minified and non-minified versions:
+
 - `dist/stoneham-override-calculator.min.js` (minified for production)
 - `dist/stoneham-override-calculator.js` (non-minified for debugging)
 - `dist/index.html` (example page using the minified version)
