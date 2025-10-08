@@ -73,34 +73,38 @@ export const CURRENT_TAX_RATE = 10.23;
  * The tax rate impact calculation constants for Stoneham, MA (FY2025).
  *
  * The relationship between override amount and tax rate impact is linear,
- * derived from 5 data points provided by Massachusetts DOR Division of Local Services:
+ * derived from 8 data points provided by Massachusetts DOR Division of Local Services:
  *
  * | Override Amount | Tax Rate Impact (per $1,000) |
  * |-----------------|------------------------------|
  * | $1,000,000      | $0.15                        |
  * | $5,000,000      | $0.75                        |
+ * | $7,500,000      | $1.13                        |
+ * | $10,000,000     | $1.51                        |
  * | $14,600,000     | $2.20                        |
+ * | $20,000,000     | $3.02                        |
  * | $25,000,000     | $3.77                        |
  * | $50,000,000     | $7.55                        |
  *
  * Using linear regression on these points yields:
  *
- * **y = 0.00000015105x - 0.00412**
+ * **y = 0.00000015103764965009x - 0.00288889605331910104**
  *
  * Where:
  * - y = tax rate impact (dollars per $1,000 of assessed value)
  * - x = override amount (dollars)
- * - R² = 0.999999 (near-perfect linear fit)
+ * - R² = 0.9999991 (near-perfect linear fit)
+ * - Max error: 0.003052 (less than 1/3 cent per $1,000)
  *
  * This can be rewritten as rate impact per dollar:
  *
- * **rate_impact_per_dollar = (0.00000015105x - 0.00412) / x**
+ * **rate_impact_per_dollar = (0.00000015103764965009x - 0.00288889605331910104) / x**
  *
  * Simplifying:
- * **rate_impact_per_dollar = 0.00000015105 - 0.00412/x**
+ * **rate_impact_per_dollar = 0.00000015103764965009 - 0.00288889605331910104/x**
  */
-export const RATE_IMPACT_SLOPE = 0.00000015105;
-export const RATE_IMPACT_INTERCEPT = -0.00412;
+export const RATE_IMPACT_SLOPE = 0.00000015103764965009;
+export const RATE_IMPACT_INTERCEPT = -0.00288889605331910104;
 
 /**
  * Format a number as a dollar amount.
@@ -322,12 +326,13 @@ export const useCalculator = (): UseCalculatorReturn => {
     // Step 1: Calculate the tax rate impact using the linear equation
     // y = mx + b where y = tax rate impact (per $1,000), x = override amount
     const rateImpact =
-      RATE_IMPACT_SLOPE * currentOverride + RATE_IMPACT_INTERCEPT;
+      Math.ceil(
+        100 * (RATE_IMPACT_SLOPE * currentOverride + RATE_IMPACT_INTERCEPT),
+      ) / 100;
 
     // Step 2: Calculate the proposed new tax rate (per $1,000 of assessed value)
     // Formula: Current Rate + Rate Impact -- truncated to 2 decimal places
-    const proposedNewTaxRate =
-      Math.trunc((CURRENT_TAX_RATE + rateImpact) * 100) / 100;
+    const proposedNewTaxRate = CURRENT_TAX_RATE + rateImpact;
 
     // Step 3: Calculate current and proposed tax bills
     // Formula: (Assessed Value / 1000) × Tax Rate

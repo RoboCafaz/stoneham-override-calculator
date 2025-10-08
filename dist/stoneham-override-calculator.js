@@ -8934,8 +8934,8 @@ var stonehamOverrideCalculator = (() => {
   var DEFAULT_OVERRIDE_AMOUNT = 5e6;
   var DEFAULT_ASSESSED_VALUE = 765770;
   var CURRENT_TAX_RATE = 10.23;
-  var RATE_IMPACT_SLOPE = 15105e-11;
-  var RATE_IMPACT_INTERCEPT = -412e-5;
+  var RATE_IMPACT_SLOPE = 15103764965009e-20;
+  var RATE_IMPACT_INTERCEPT = -0.002888896053319101;
   var formatDollars = (val) => val.toLocaleString("en-US", {
     style: "currency",
     currency: "USD"
@@ -8998,8 +8998,10 @@ var stonehamOverrideCalculator = (() => {
     );
     y2(() => {
       const currentOverride = overrideValue != null ? overrideValue : 0;
-      const rateImpact = RATE_IMPACT_SLOPE * currentOverride + RATE_IMPACT_INTERCEPT;
-      const proposedNewTaxRate = Math.trunc((CURRENT_TAX_RATE + rateImpact) * 100) / 100;
+      const rateImpact = Math.ceil(
+        100 * (RATE_IMPACT_SLOPE * currentOverride + RATE_IMPACT_INTERCEPT)
+      ) / 100;
+      const proposedNewTaxRate = CURRENT_TAX_RATE + rateImpact;
       const currentTaxBill = (assessedValue != null ? assessedValue : 0) / 1e3 * CURRENT_TAX_RATE;
       const newTaxBill = (assessedValue != null ? assessedValue : 0) / 1e3 * proposedNewTaxRate;
       const taxBillImpactYearly = newTaxBill - currentTaxBill;
